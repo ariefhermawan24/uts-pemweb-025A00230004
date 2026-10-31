@@ -532,6 +532,54 @@ body {
   flex-grow: 1;
 }
 
+.event-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.event-actions .btn {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+}
+
+.mt-auto { margin-top: auto; }
+.mb-form { margin-bottom: 12px; }
+
+.ticket-box {
+    background-color: #F0FDF4;
+    border: 1px dashed #86EFAC;
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+}
+
+.register-form {
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 14px;
+    margin-bottom: 16px;
+}
+
+.btn-success.btn-disabled {
+    background-color: #16A34A;
+    color: #FFFFFF;
+    opacity: 0.9;
+}
+
+.btn-outline-danger {
+    background-color: transparent;
+    color: #DC2626;
+    border: 1px solid #FCA5A5;
+}
+
+.btn-outline-danger:hover {
+    background-color: #FEF2F2;
+    border-color: #DC2626;
+}
+
 .site-footer {
   background-color: var(--color-surface);
   border-top: 1px solid var(--color-border);

@@ -7,9 +7,9 @@ function e(string $string): string
     return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
 }
 
-function formatTanggalIndo(string $tanggal): string
+function tanggal_id(string $tanggal): string
 {
-    $bulanIndo = [
+    $nama_bulan = [
         1 => 'Januari',
         'Februari',
         'Maret',
@@ -30,7 +30,7 @@ function formatTanggalIndo(string $tanggal): string
     $bulan = (int)$pecahkan[1];
     $tahun = $pecahkan[0];
 
-    return $hari . ' ' . $bulanIndo[$bulan] . ' ' . $tahun;
+    return $hari . ' ' . $nama_bulan[$bulan] . ' ' . $tahun;
 }
 
 function getStatusKuota(int $terdaftar, int $kuota): array

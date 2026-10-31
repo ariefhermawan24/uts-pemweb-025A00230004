@@ -2,8 +2,54 @@
 
 declare(strict_types=1);
 
+session_start();
+
 require_once 'data.php';
 require_once 'functions.php';
+
+if (!isset($_SESSION['katalog_agenda'])) {
+    $_SESSION['katalog_agenda'] = $katalog_agenda;
+}
+if (!isset($_SESSION['registrasi'])) {
+    $_SESSION['registrasi'] = [];
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['daftar_id'], $_POST['nama_peserta'])) {
+    $id = (int)$_POST['daftar_id'];
+    $nama = trim($_POST['nama_peserta']);
+
+    if ($nama !== '' && !isset($_SESSION['registrasi'][$id])) {
+        $tiket = 'CDX-' . rand(10000, 99999);
+        $_SESSION['registrasi'][$id] = [
+            'tiket' => $tiket
+        ];
+
+        foreach ($_SESSION['katalog_agenda'] as $key => $agenda) {
+            if ($agenda['id'] === $id) {
+                $_SESSION['katalog_agenda'][$key]['peserta_terdaftar'] += 1;
+                break;
+            }
+        }
+    }
+    header('Location: katalog.php#agenda-' . $id);
+    exit;
+}
+
+if (isset($_GET['batal_id'])) {
+    $id = (int)$_GET['batal_id'];
+
+    if (isset($_SESSION['registrasi'][$id])) {
+        unset($_SESSION['registrasi'][$id]);
+        foreach ($_SESSION['katalog_agenda'] as $key => $agenda) {
+            if ($agenda['id'] === $id) {
+                $_SESSION['katalog_agenda'][$key]['peserta_terdaftar'] -= 1;
+                break;
+            }
+        }
+    }
+    header('Location: katalog.php#agenda-' . $id);
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -72,11 +118,16 @@ require_once 'functions.php';
             <h2>Daftar Agenda Terbuka</h2>
 
             <div class="events-grid">
-                <?php foreach ($katalog_agenda as $agenda) : ?>
+                <?php foreach ($_SESSION['katalog_agenda'] as $agenda) : ?>
                     <?php
+                    $id = $agenda['id'];
                     $status = getStatusKuota($agenda['peserta_terdaftar'], $agenda['kuota']);
+
+                    // Cek status card
+                    $is_registered = isset($_SESSION['registrasi'][$id]);
+                    $is_registering = (isset($_GET['daftar']) && (int)$_GET['daftar'] === $id);
                     ?>
-                    <article class="event-card">
+                    <article class="event-card" id="agenda-<?= $id ?>">
                         <div class="event-img-wrap">
                             <img src="<?= e($agenda['gambar']) ?>" alt="<?= e($agenda['judul']) ?>" class="event-img">
                             <span class="badge-status <?= e($status['class_badge']) ?>">
@@ -89,7 +140,7 @@ require_once 'functions.php';
                             <div class="event-stats">
                                 <div class="stat-col">
                                     <span class="stat-label">Peserta Terdaftar</span>
-                                    <span class="stat-number"><?= e((string)$agenda['peserta_terdaftar']) ?></span>
+                                    <span class="stat-number"><?= e((string)($agenda['peserta_terdaftar'])) ?></span>
                                 </div>
                                 <div class="stat-col">
                                     <span class="stat-label">Batas Kuota</span>
@@ -98,19 +149,51 @@ require_once 'functions.php';
                             </div>
 
                             <div class="event-meta">
-                                <p class="meta-item"><strong>Jadwal :</strong> <?= e(formatTanggalIndo($agenda['jadwal'])) ?></p>
-                                <p class="meta-item"><strong>Lokasi :</strong> <?= e($agenda['lokasi']) ?></p>
+                                <p class="meta-item"><strong>Jadwal:</strong> <?= e(tanggal_id($agenda['jadwal'])) ?></p>
+                                <p class="meta-item"><strong>Lokasi:</strong> <?= e($agenda['lokasi']) ?></p>
                             </div>
 
                             <p class="event-desc">
                                 <?= e($agenda['deskripsi']) ?>
                             </p>
 
-                            <div class="event-actions">
-                                <a href="#masuk" class="btn <?= e($status['btn_class']) ?> btn-sm">
-                                    <?= e($status['btn_text']) ?>
-                                </a>
-                            </div>
+                            <?php if ($is_registered): ?>
+                                <!-- Kondisi Terdaftar -->
+                                <div class="ticket-box mt-auto">
+                                    <strong><?= e($_SESSION['registrasi'][$id]['tiket']) ?></strong>
+                                </div>
+                                <div class="event-actions">
+                                    <a href="katalog.php?batal_id=<?= $id ?>" class="btn btn-outline-danger btn-sm">Batalkan</a>
+                                    <button class="btn btn-success btn-disabled btn-sm" disabled>Terdaftar</button>
+                                </div>
+
+                            <?php elseif ($is_registering): ?>
+                                <!--FORM ISI NAMA untuk Daftar -->
+                                <form action="katalog.php" method="POST" class="register-form mt-auto">
+                                    <input type="hidden" name="daftar_id" value="<?= $id ?>">
+                                    <div class="form-group mb-form">
+                                        <label for="nama_<?= $id ?>">Nama Lengkap Anda:</label>
+                                        <input type="text" id="nama_<?= $id ?>" name="nama_peserta" class="form-control" required placeholder="Ketik nama...">
+                                    </div>
+                                    <div class="event-actions">
+                                        <a href="katalog.php#agenda-<?= $id ?>" class="btn btn-outline-dark btn-sm">Kembali</a>
+                                        <button type="submit" class="btn btn-primary btn-sm">Kirim</button>
+                                    </div>
+                                </form>
+
+                            <?php else: ?>
+                                <!-- Kondisi Default -->
+                                <div class="event-actions mt-auto">
+                                    <?php if ($status['btn_class'] !== 'btn-disabled'): ?>
+                                        <a href="katalog.php?daftar=<?= $id ?>#agenda-<?= $id ?>" class="btn <?= e($status['btn_class']) ?> btn-sm">
+                                            Daftar
+                                        </a>
+                                    <?php else: ?>
+                                        <button class="btn btn-disabled btn-sm" disabled>Sesi Penuh</button>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
+
                         </div>
                     </article>
                 <?php endforeach; ?>
